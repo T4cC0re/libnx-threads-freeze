@@ -10,3 +10,10 @@ Instructions:
 4. It will run and quit successfully if it did not freeze. So press Y on the switch to load the app again.
 5. At some point it will freeze after spawning a new thread.
 6. ??? This is where I am stuck. No idea how to debug this further.
+
+Update:
+ - Made the busy loop actually busy.
+ - Loop threadpool creation and destruction to increase automation
+ - Added a linux.elf target, that uses pthreads on linux. That runs without issues or freezes, so I am quite certain, that the freezes are either is related to HorizonOS, libnx or the switch hardware.
+ - the switch froze after 154 and 206 loop iterations in my test runs. Twice it crashed completely (2168-0002). Running on FW 8.1.0. Tested with AMS 0.9.3 and SX OS 2.8.
+ - compiled with `devkitA64 r13-4` on Arch Linux

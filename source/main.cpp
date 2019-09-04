@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __SWITCH__
 #include <switch.h>
+#endif
 #include <thread>
 #include <vector>
 #include "ThreadPool.hpp"
@@ -10,10 +12,10 @@
 
 std::vector<std::future<int>> vthreads;
 
-int call_from_thread(u32 threadNr) {
-    int i = 0;
+int call_from_thread(unsigned int threadNr) {
+    volatile int i = 0;
     // Make the thread busy
-    while (i < 10000) {
+    while (i < 1000000000) {
         i++;
     }
     return i * threadNr;
@@ -21,7 +23,7 @@ int call_from_thread(u32 threadNr) {
 
 void collectResultsBlocking() {
     printf("collectResultsBlocking called\n");
-    for (u32 i = 0; i < vthreads.size(); i++){
+    for (unsigned int i = 0; i < vthreads.size(); i++){
          printf("Thread %d result: %d\n", i, vthreads.at(i).get());
     }
     vthreads.clear();
@@ -30,41 +32,52 @@ void collectResultsBlocking() {
 
 int main(int argc, char* argv[])
 {
-    consoleInit(NULL);
-    u32 counter = 0;
+    unsigned int counter = 0;
 
+#ifdef __SWITCH__
+    consoleInit(NULL);
     socketInitializeDefault();
     nxlinkStdio();
+#endif
 
     printf("Hello World! %d\n", counter);
-    counter++;
 
-    ThreadPool pool{NUM_THREADS}; // Threadpool is initialized and threads started
+    while (true) {
+        // Confine in scope, so that the threadpool is re-created
+        {
+            ThreadPool pool{NUM_THREADS}; // Threadpool is initialized and threads started
 
-    printf("Hello World! %d\n", counter);
-    counter++;
+            printf("Before spawning! %d\n", counter);
 
-    for (auto i = 0; i < NUM_THREADS; ++i)
-    {
-        // Threads get work
-        vthreads.push_back(pool.enqueue([=] {
-            return call_from_thread(i);
-        }));
+            for (auto i = 0; i < NUM_THREADS; ++i)
+            {
+                // Threads get work
+                vthreads.push_back(pool.enqueue([=] {
+                    return call_from_thread(i);
+                }));
+            }
+
+            printf("after spawning! %d\n", counter);
+
+            volatile int i = 0;
+            // Make the main thread busy, too
+            while (i < 600000000) {
+                i++;
+            }
+            printf("i = %d\n", i);
+            //Get results from future.
+            collectResultsBlocking();
+        }
+        counter++;
+
+        if (counter > 3601) {
+            break;
+        }
     }
 
-    printf("Hello World! %d\n", counter);
-    counter++;
-
-    int i = 0;
-    // Make the main thread busy, too
-    while (i < 30000) {
-        i++;
-    }
-    printf("i = %d\n", i);
-    //Get results from future.
-    collectResultsBlocking();
-
+#ifdef __SWITCH__
     socketExit();
     consoleExit(NULL);
+#endif
     return 0;
 }

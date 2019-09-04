@@ -3,19 +3,22 @@
 ThreadPool::ThreadPool(std::size_t numThreads)
 {
     start(numThreads);
+    printf("Threadpool created\n");
 }
 
 ThreadPool::~ThreadPool()
 {
     stop();
+    printf("Threadpool destructed\n");
 }
 
 void ThreadPool::start(std::size_t numThreads)
 {
     for (auto i = 0u; i < numThreads; ++i)
     {
-        printf("spawning thread %d/%d\n", i + 1, numThreads);
+        printf("spawning thread %d/%lu\n", i + 1, numThreads);
         mThreads.emplace_back([=]{
+#ifdef __SWITCH__
             u32 prio;
             s32 preferred;
             u32 mask;
@@ -26,6 +29,7 @@ void ThreadPool::start(std::size_t numThreads)
             svcGetThreadCoreMask(&preferred, &mask, h);
 
             printf("[%ld] Prio: %x, preferred CPU: %d, mask: %x\n", threadId, prio, preferred, mask);
+#endif
 
             while (true)
             {
@@ -47,7 +51,7 @@ void ThreadPool::start(std::size_t numThreads)
                 task();
             }
         });
-        printf("spawned thread %d/%d\n", i + 1, numThreads);
+        printf("spawned thread %d/%lu\n", i + 1, numThreads);
     }
     printf("all threads\n");
 }
@@ -65,21 +69,3 @@ void ThreadPool::stop() noexcept
         thread.join();
     }
 }
-
-//int main()
-//{
-//    {
-//        ThreadPool pool{36};
-//
-//        for (auto i = 0; i < 36; ++i)
-//        {
-//            pool.enqueue([] {
-//                auto f = 1000000000;
-//                while (f > 1)
-//                    f /= 1.00000001;
-//            });
-//        }
-//    }
-//
-//    return 0;
-//}

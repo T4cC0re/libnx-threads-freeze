@@ -6,7 +6,9 @@
 #include <vector>
 #include <thread>
 #include <queue>
+#ifdef __SWITCH__
 #include <switch.h>
+#endif
 
 using Task = std::function<void()>;
 class ThreadPool
